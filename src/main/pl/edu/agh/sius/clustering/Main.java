@@ -21,13 +21,15 @@ public class Main {
 
         List<String> mergeInputs = new ArrayList<>();
 
-        final int DIM_SIZE = 10;
-        final double CUBE_SIZE = DataSource.DIMENSION_SIZE / ((double) DIM_SIZE);
+        final int DIM_SIZE = 5;
+        final int DIM_CUBES_PER_BOLT = 5;
+        final double CUBE_SIZE = DataSource.DIMENSION_SIZE / ((double) (DIM_SIZE * DIM_CUBES_PER_BOLT));
+        final double BOLT_CUBE_SIZE = DIM_CUBES_PER_BOLT * CUBE_SIZE;
         for (int y = 0; y < DIM_SIZE; ++y) {
             for (int x = 0; x < DIM_SIZE; x++) {
                 DoubleRange[] range = new DoubleRange[] {
-                    new DoubleRange(x * CUBE_SIZE, (x + 1) * CUBE_SIZE),
-                    new DoubleRange(y * CUBE_SIZE, (y + 1) * CUBE_SIZE)
+                    new DoubleRange(x * BOLT_CUBE_SIZE, (x + 1) * BOLT_CUBE_SIZE),
+                    new DoubleRange(y * BOLT_CUBE_SIZE, (y + 1) * BOLT_CUBE_SIZE)
                 };
 
                 String name = "filter" + x + "," + y;

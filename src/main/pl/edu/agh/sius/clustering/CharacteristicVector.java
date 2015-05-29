@@ -3,7 +3,7 @@ package pl.edu.agh.sius.clustering;
 import java.time.Instant;
 
 public class CharacteristicVector {
-    public static final double DECAY_FACTOR = 0.9;
+    public static final double DECAY_FACTOR = 1.0;
 
     enum Status {
         Sporadic,

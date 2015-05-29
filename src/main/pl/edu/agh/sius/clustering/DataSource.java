@@ -20,7 +20,7 @@ public class DataSource extends BaseRichSpout {
     private long counter = 0;
 
     public static final double DIMENSION_SIZE = 1.0;
-    public static final double MAX_VARIANCE = 0.1;
+    public static final double MAX_VARIANCE = 0.01;
 
     public DataSource(int numClusters,
                       int numDimensions) {
