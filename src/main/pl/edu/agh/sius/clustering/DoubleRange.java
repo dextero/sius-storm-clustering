@@ -1,6 +1,8 @@
 package pl.edu.agh.sius.clustering;
 
-public class DoubleRange {
+import java.io.Serializable;
+
+public class DoubleRange implements Serializable {
     public final double min;
     public final double max;
 
