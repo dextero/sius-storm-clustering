@@ -18,9 +18,6 @@ public class DataSource extends BaseRichSpout {
     private SpoutOutputCollector collector;
     private long counter = 0;
 
-    public static final double DIMENSION_SIZE = 1.0;
-    public static final double MAX_VARIANCE = 0.05;
-
     public DataSource(int numClusters,
                       int numDimensions) {
         assert numClusters > 0;
@@ -33,8 +30,8 @@ public class DataSource extends BaseRichSpout {
             double[] variance = new double[numDimensions];
 
             for (int dimIdx = 0; dimIdx < mean.length; dimIdx++) {
-                mean[dimIdx] = rng.nextDouble() * DIMENSION_SIZE;
-                variance[dimIdx] = rng.nextDouble() * MAX_VARIANCE;
+                mean[dimIdx] = rng.nextDouble() * Constants.DIMENSION_SIZE;
+                variance[dimIdx] = rng.nextDouble() * Constants.MAX_VARIANCE;
             }
 
             clusters.add(new ClusterDef(mean, variance));
@@ -65,7 +62,7 @@ public class DataSource extends BaseRichSpout {
             points = new ArrayList<>();
 
             for (ClusterDef clusterDef : clusters) {
-                clusterDef.move(VectorUtils.random(rng, point.length, 0.01));
+                clusterDef.randomize(0.0025, 0.0025);
             }
         }
 

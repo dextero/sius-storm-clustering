@@ -25,9 +25,15 @@ public class ClusterDef implements Serializable {
         return ret;
     }
 
-    public void move(double[] delta) {
+    public void randomize(double moveFactor,
+                          double sizeFactor) {
         for (int i = 0; i < mean.length; i++) {
-            mean[i] = Math.min(Math.max(0.1, mean[i] + delta[i]), 0.9);
+            mean[i] = Math.min(Math.max(Constants.DIMENSION_SIZE * 0.05,
+                                        mean[i] + rng.nextGaussian() * moveFactor),
+                               Constants.DIMENSION_SIZE * 0.95);
+            variance[i] = Math.min(Math.max(Constants.MIN_VARIANCE,
+                                            variance[i] + rng.nextGaussian() * sizeFactor),
+                                   Constants.MAX_VARIANCE);
         }
     }
 }

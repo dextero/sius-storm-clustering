@@ -2,10 +2,14 @@ package pl.edu.agh.sius.clustering.visualizer;
 
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.scenes.scene2d.Event;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.InputListener;
 import pl.edu.agh.sius.clustering.ColoredPoint;
 import pl.edu.agh.sius.clustering.Constants;
 import pl.edu.agh.sius.clustering.Main;
@@ -14,7 +18,7 @@ import pl.edu.agh.sius.clustering.PositionWrapper;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Visualizer implements ApplicationListener {
+public class Visualizer implements ApplicationListener, InputProcessor {
     public volatile static List<List<PositionWrapper>> clusters = new ArrayList<>();
     public volatile static List<ColoredPoint> points = new ArrayList<>();
 
@@ -66,6 +70,7 @@ public class Visualizer implements ApplicationListener {
         pointSprite.setOrigin(0.5f, 0.5f);
 
         Gdx.gl.glViewport(0, 0, width, height);
+        Gdx.input.setInputProcessor(this);
     }
 
     @Override
@@ -90,6 +95,8 @@ public class Visualizer implements ApplicationListener {
 
         batch.begin();
         batch.enableBlending();
+
+        List<List<PositionWrapper>> clusters = Visualizer.clusters;
         for (int i = 0; i < clusters.size(); i++) {
             rectSprite.setColor(CLUSTER_COLORS[i % CLUSTER_COLORS.length]);
 
@@ -100,6 +107,7 @@ public class Visualizer implements ApplicationListener {
             }
         }
 
+        List<ColoredPoint> points = Visualizer.points;
         for (ColoredPoint point : points) {
             pointSprite.setPosition(translateX(point.pos[0]), translateY(point.pos[1]));
             pointSprite.setColor(POINT_COLORS[point.cluster]);
@@ -124,10 +132,63 @@ public class Visualizer implements ApplicationListener {
 
     @Override
     public void pause() {
-        Main.finished = true;
     }
 
     @Override
     public void resume() {
+    }
+
+    @Override
+    public boolean keyDown(int i) {
+        return false;
+    }
+
+    @Override
+    public boolean keyUp(int i) {
+        return false;
+    }
+
+    @Override
+    public boolean keyTyped(char c) {
+        if (c == 27) {
+            Gdx.app.exit();
+            Main.finished = true;
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean touchDown(int i,
+                             int i1,
+                             int i2,
+                             int i3) {
+        return false;
+    }
+
+    @Override
+    public boolean touchUp(int i,
+                           int i1,
+                           int i2,
+                           int i3) {
+        return false;
+    }
+
+    @Override
+    public boolean touchDragged(int i,
+                                int i1,
+                                int i2) {
+        return false;
+    }
+
+    @Override
+    public boolean mouseMoved(int i,
+                              int i1) {
+        return false;
+    }
+
+    @Override
+    public boolean scrolled(int i) {
+        return false;
     }
 }

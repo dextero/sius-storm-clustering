@@ -25,8 +25,8 @@ public class Main {
 
         List<String> mergeInputs = new ArrayList<>();
 
-        final double CUBE_SIZE = DataSource.DIMENSION_SIZE / ((double) (Constants.TOTAL_CUBES_PER_SPACE));
-        final double BOLT_CUBE_SIZE = Constants.DIM_CUBES_PER_BOLT * CUBE_SIZE;
+        final double BOLT_CUBE_SIZE = Constants.DIM_CUBES_PER_BOLT * Constants.CUBE_SIZE;
+        final double[] CUBE_SIZE = new double[] { Constants.CUBE_SIZE, Constants.CUBE_SIZE };
         for (int y = 0; y < Constants.DIM_SIZE; ++y) {
             for (int x = 0; x < Constants.DIM_SIZE; x++) {
                 DoubleRange[] range = new DoubleRange[] {
@@ -38,7 +38,7 @@ public class Main {
 //                String name2 = "output" + x + "," + y;
                 String name3 = "dstream" + x + "," + y;
                 builder.setBolt(name, new DataFilterBolt(range)).shuffleGrouping("source");
-                builder.setBolt(name3, new DStreamBolt(new double[] { CUBE_SIZE, CUBE_SIZE })).shuffleGrouping(name);
+                builder.setBolt(name3, new DStreamBolt(CUBE_SIZE)).shuffleGrouping(name);
 //                builder.setBolt(name2, new StdoutPrinterBolt(x, y)).shuffleGrouping(name3);
                 mergeInputs.add(name3);
             }
