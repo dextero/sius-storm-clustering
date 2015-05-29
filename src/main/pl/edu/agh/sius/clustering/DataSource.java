@@ -11,6 +11,7 @@ import pl.edu.agh.sius.clustering.visualizer.Visualizer;
 import java.util.*;
 
 public class DataSource extends BaseRichSpout {
+
     private final Random rng;
 
     private ArrayList<ClusterDef> clusters = new ArrayList<>();
@@ -18,7 +19,7 @@ public class DataSource extends BaseRichSpout {
     private long counter = 0;
 
     public static final double DIMENSION_SIZE = 1.0;
-    public static final double MAX_VARIANCE = 0.01;
+    public static final double MAX_VARIANCE = 0.05;
 
     public DataSource(int numClusters,
                       int numDimensions) {
@@ -50,7 +51,7 @@ public class DataSource extends BaseRichSpout {
         collector = spoutOutputCollector;
     }
 
-    public static List<double[]> points = new ArrayList<>();
+    public static List<ColoredPoint> points = new ArrayList<>();
     public static final int MAX_POINTS = 100;
 
     public void nextTuple() {
@@ -58,7 +59,7 @@ public class DataSource extends BaseRichSpout {
         ClusterDef cluster = clusters.get(clusterIdx);
         double[] point = cluster.generatePoint();
 
-        points.add(point);
+        points.add(new ColoredPoint(point, clusterIdx));
         if (points.size() >= MAX_POINTS) {
             Visualizer.points = points;
             points = new ArrayList<>();
