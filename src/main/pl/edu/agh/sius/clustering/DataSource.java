@@ -8,6 +8,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 
@@ -16,6 +17,7 @@ public class DataSource extends BaseRichSpout {
 
     private ArrayList<ClusterDef> clusters = new ArrayList<>();
     private SpoutOutputCollector collector;
+    private long counter = 0;
 
     public static final double DIMENSION_SIZE = 1.0;
     public static final double MAX_VARIANCE = 0.1;
@@ -41,7 +43,7 @@ public class DataSource extends BaseRichSpout {
     }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-        outputFieldsDeclarer.declare(new Fields("value"));
+        outputFieldsDeclarer.declare(new Fields("value", "timestamp"));
     }
 
     public void open(Map map,
@@ -53,6 +55,7 @@ public class DataSource extends BaseRichSpout {
     public void nextTuple() {
         int clusterIdx = rng.nextInt(clusters.size());
         ClusterDef cluster = clusters.get(clusterIdx);
-        collector.emit(new Values(cluster.generatePoint()));
+        double[] point = cluster.generatePoint();
+        collector.emit(new Values(point, counter++));
     }
 }

@@ -26,8 +26,10 @@ class StdoutPrinterBolt extends BaseRichBolt {
     }
 
     public void execute(Tuple tuple) {
-        double[] value = (double[]) tuple.getValue(0);
-        System.out.println("result " + x + "," + y + ": " + Arrays.toString(value));
+//        double[] value = (double[]) tuple.getValue(0);
+//        System.out.println("result " + x + "," + y + ": " + Arrays.toString(value));
+        CharacteristicVector cv = ((CharacteristicVector) tuple.getValue(0));
+        System.out.println("result " + cv.position[0] + "," + cv.position[1] + ": " + cv.density);
         if (++counter >= 100) {
             Main.finished = true;
         }

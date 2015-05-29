@@ -39,11 +39,11 @@ public class DataFilterBolt extends BaseRichBolt {
             }
         }
 
-        collector.emit(new Values(point));
+        collector.emit(new Values(point, tuple.getLong(1)));
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-        outputFieldsDeclarer.declare(new Fields("point"));
+        outputFieldsDeclarer.declare(new Fields("point", "timestamp"));
     }
 }
