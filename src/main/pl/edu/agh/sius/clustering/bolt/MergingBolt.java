@@ -20,13 +20,8 @@ public class MergingBolt extends BaseRichBolt {
     private OutputCollector collector;
     private Map<PositionWrapper, Double> cubes = new HashMap<>();
     private int counter = 0;
-    private int dimSize;
 
-    public static final int MESSAGES_PER_UPDATE = 100;
-
-    public MergingBolt(int dimSize) {
-        this.dimSize = dimSize;
-    }
+    public static final int MESSAGES_PER_UPDATE = 1000;
 
     @Override
     public void prepare(Map map,
@@ -99,7 +94,6 @@ public class MergingBolt extends BaseRichBolt {
     private void update() {
         List<List<PositionWrapper>> clusters = initialClustering();
         Visualizer.clusters = clusters;
-        Visualizer.self.repaint();
 
         StringBuilder builder = new StringBuilder();
         for (List<PositionWrapper> cluster: clusters) {

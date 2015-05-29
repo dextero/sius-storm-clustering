@@ -9,6 +9,9 @@ import pl.edu.agh.sius.clustering.bolt.DataFilterBolt;
 import pl.edu.agh.sius.clustering.bolt.MergingBolt;
 import pl.edu.agh.sius.clustering.visualizer.Visualizer;
 
+import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
+import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,7 +47,7 @@ public class Main {
             }
         }
 
-        BoltDeclarer mergingBolt = builder.setBolt("merging", new MergingBolt(DIM_SIZE)).setMaxTaskParallelism(1);
+        BoltDeclarer mergingBolt = builder.setBolt("merging", new MergingBolt()).setMaxTaskParallelism(1);
         for (String input : mergeInputs) {
             mergingBolt.shuffleGrouping(input);
         }
@@ -57,7 +60,12 @@ public class Main {
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("test", config, builder.createTopology());
 
-        Visualizer.show(42);
+        LwjglApplicationConfiguration cfg = new LwjglApplicationConfiguration();
+        cfg.title = "hello-world";
+        cfg.width = 900;
+        cfg.height = 900;
+
+        new LwjglApplication(new Visualizer(), cfg);
 
         while (!finished) {
 //            System.err.println("waiting");
