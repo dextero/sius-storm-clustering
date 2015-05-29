@@ -21,7 +21,7 @@ public class Main {
 
         List<String> mergeInputs = new ArrayList<>();
 
-        final int DIM_SIZE = 5;
+        final int DIM_SIZE = 10;
         final double CUBE_SIZE = DataSource.DIMENSION_SIZE / ((double) DIM_SIZE);
         for (int y = 0; y < DIM_SIZE; ++y) {
             for (int x = 0; x < DIM_SIZE; x++) {
@@ -40,7 +40,7 @@ public class Main {
             }
         }
 
-        BoltDeclarer mergingBolt = builder.setBolt("merging", new MergingBolt()).setMaxTaskParallelism(1);
+        BoltDeclarer mergingBolt = builder.setBolt("merging", new MergingBolt(DIM_SIZE)).setMaxTaskParallelism(1);
         for (String input : mergeInputs) {
             mergingBolt.shuffleGrouping(input);
         }

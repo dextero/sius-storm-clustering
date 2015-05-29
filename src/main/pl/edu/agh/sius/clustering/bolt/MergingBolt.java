@@ -10,15 +10,22 @@ import pl.edu.agh.sius.clustering.CharacteristicVector;
 import pl.edu.agh.sius.clustering.DoubleRange;
 import pl.edu.agh.sius.clustering.Main;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MergingBolt extends BaseRichBolt {
     private OutputCollector collector;
     private Map<PositionWrapper, Double> cubes = new HashMap<>();
     private int counter = 0;
+    private int dimSize;
 
     public static final int MESSAGES_PER_UPDATE = 100;
+
+    public MergingBolt(int dimSize) {
+        this.dimSize = dimSize;
+    }
 
     @Override
     public void prepare(Map map,
@@ -37,10 +44,67 @@ public class MergingBolt extends BaseRichBolt {
         }
     }
 
-    private void update() {
-        StringBuilder builder = new StringBuilder();
+    public static final double DENSITY_MIN = 1.1;
+
+    private List<List<PositionWrapper>> initialClustering() {
+        // TODO: optimize
+        List<List<PositionWrapper>> clusters = new ArrayList<>();
+
         for (Map.Entry<PositionWrapper, Double> cube: cubes.entrySet()) {
-            builder.append("pos: ").append(cube.getKey()).append(" = ").append(cube.getValue()).append("\n");
+            PositionWrapper currPos = cube.getKey();
+            double density = cube.getValue();
+
+            if (density < DENSITY_MIN) {
+                continue;
+            }
+
+            List<Integer> clustersToMerge = new ArrayList<>();
+
+            for (int dx = -1; dx <= 1; ++dx) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    PositionWrapper nbrPos = new PositionWrapper(new int[] {
+                            currPos.pos[0] + dx,
+                            currPos.pos[1] + dy
+                    });
+
+                    for (int i = 0; i < clusters.size(); ++i) {
+                        List<PositionWrapper> cluster = clusters.get(i);
+                        if (cluster.indexOf(nbrPos) != -1) {
+                            clustersToMerge.add(i);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            List<PositionWrapper> newCluster = new ArrayList<>();
+            newCluster.add(currPos);
+            List<List<PositionWrapper>> newClusters = new ArrayList<>();
+            newClusters.add(newCluster);
+            for (int i = 0; i < clusters.size(); i++) {
+                if (clustersToMerge.contains(i)) {
+                    newCluster.addAll(clusters.get(i));
+                } else {
+                    newClusters.add(clusters.get(i));
+                }
+            }
+
+            clusters = newClusters;
+        }
+
+        return clusters;
+    }
+
+    private void update() {
+        List<List<PositionWrapper>> clusters = initialClustering();
+
+        StringBuilder builder = new StringBuilder();
+        for (List<PositionWrapper> cluster: clusters) {
+            builder.append("cluster:");
+            for (PositionWrapper position : cluster) {
+                builder.append(" ").append(position).append(" = ").append(cubes.get(position));
+            }
+            builder.append("\n");
         }
         System.err.println(builder.toString());
         counter = 0;
