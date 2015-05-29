@@ -10,12 +10,12 @@ public class CharacteristicVector {
         Normal
     }
 
-    Status status;
-    long timeLastUpdated = 0;
-    double timeLastRemovedSporadic = 0.0;
-    double density = 0.0;
-    int[] position;
-    DoubleRange[] boundingBox;
+    public Status status;
+    public long timeLastUpdated = 0;
+    public double timeLastRemovedSporadic = 0.0;
+    public double density = 0.0;
+    public int[] position;
+    public DoubleRange[] boundingBox;
 
     public CharacteristicVector(int[] position) {
         this.position = position;

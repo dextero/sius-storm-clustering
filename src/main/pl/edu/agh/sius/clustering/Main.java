@@ -2,9 +2,14 @@ package pl.edu.agh.sius.clustering;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
+import backtype.storm.topology.BoltDeclarer;
 import backtype.storm.topology.TopologyBuilder;
 import pl.edu.agh.sius.clustering.bolt.DStreamBolt;
 import pl.edu.agh.sius.clustering.bolt.DataFilterBolt;
+import pl.edu.agh.sius.clustering.bolt.MergingBolt;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main {
     public static boolean finished;
@@ -13,6 +18,8 @@ public class Main {
         TopologyBuilder builder = new TopologyBuilder();
 
         builder.setSpout("source", new DataSource(3, 2));
+
+        List<String> mergeInputs = new ArrayList<>();
 
         final int DIM_SIZE = 5;
         final double CUBE_SIZE = DataSource.DIMENSION_SIZE / ((double) DIM_SIZE);
@@ -24,12 +31,18 @@ public class Main {
                 };
 
                 String name = "filter" + x + "," + y;
-                String name2 = "output" + x + "," + y;
+//                String name2 = "output" + x + "," + y;
                 String name3 = "dstream" + x + "," + y;
                 builder.setBolt(name, new DataFilterBolt(range)).shuffleGrouping("source");
                 builder.setBolt(name3, new DStreamBolt(new double[] { CUBE_SIZE, CUBE_SIZE })).shuffleGrouping(name);
-                builder.setBolt(name2, new StdoutPrinterBolt(x, y)).shuffleGrouping(name3);
+//                builder.setBolt(name2, new StdoutPrinterBolt(x, y)).shuffleGrouping(name3);
+                mergeInputs.add(name3);
             }
+        }
+
+        BoltDeclarer mergingBolt = builder.setBolt("merging", new MergingBolt()).setMaxTaskParallelism(1);
+        for (String input : mergeInputs) {
+            mergingBolt.shuffleGrouping(input);
         }
 
         Config config = new Config();
