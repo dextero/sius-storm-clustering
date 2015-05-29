@@ -1,8 +1,8 @@
 package pl.edu.agh.sius.clustering;
 
 public class DoubleRange {
-    final double min;
-    final double max;
+    public final double min;
+    public final double max;
 
     public DoubleRange(double min,
                        double max) {
