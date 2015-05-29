@@ -63,6 +63,10 @@ public class DataSource extends BaseRichSpout {
         if (points.size() >= MAX_POINTS) {
             Visualizer.points = points;
             points = new ArrayList<>();
+
+            for (ClusterDef clusterDef : clusters) {
+                clusterDef.move(VectorUtils.random(rng, point.length, 0.01));
+            }
         }
 
         collector.emit(new Values(point, counter++));

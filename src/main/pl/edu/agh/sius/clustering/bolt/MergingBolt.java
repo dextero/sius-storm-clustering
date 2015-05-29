@@ -7,6 +7,7 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import pl.edu.agh.sius.clustering.CharacteristicVector;
+import pl.edu.agh.sius.clustering.Constants;
 import pl.edu.agh.sius.clustering.Main;
 import pl.edu.agh.sius.clustering.PositionWrapper;
 import pl.edu.agh.sius.clustering.visualizer.Visualizer;
@@ -40,8 +41,6 @@ public class MergingBolt extends BaseRichBolt {
         }
     }
 
-    public static final double DENSITY_MIN = 1.1;
-
     private List<List<PositionWrapper>> initialClustering() {
         // TODO: optimize
         List<List<PositionWrapper>> clusters = new ArrayList<>();
@@ -50,7 +49,7 @@ public class MergingBolt extends BaseRichBolt {
             PositionWrapper currPos = cube.getKey();
             double density = cube.getValue();
 
-            if (density < DENSITY_MIN) {
+            if (density < Constants.DENSITY_MIN) {
                 continue;
             }
 
@@ -95,15 +94,15 @@ public class MergingBolt extends BaseRichBolt {
         List<List<PositionWrapper>> clusters = initialClustering();
         Visualizer.clusters = clusters;
 
-        StringBuilder builder = new StringBuilder();
-        for (List<PositionWrapper> cluster: clusters) {
-            builder.append("cluster:");
-            for (PositionWrapper position : cluster) {
-                builder.append(" ").append(position).append(" = ").append(cubes.get(position));
-            }
-            builder.append("\n");
-        }
-        System.err.println(builder.toString());
+//        StringBuilder builder = new StringBuilder();
+//        for (List<PositionWrapper> cluster: clusters) {
+//            builder.append("cluster:");
+//            for (PositionWrapper position : cluster) {
+//                builder.append(" ").append(position).append(" = ").append(cubes.get(position));
+//            }
+//            builder.append("\n");
+//        }
+//        System.err.println(builder.toString());
         counter = 0;
     }
 

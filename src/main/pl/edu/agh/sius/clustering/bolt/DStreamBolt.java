@@ -49,7 +49,6 @@ public class DStreamBolt extends BaseRichBolt {
         CharacteristicVector cv = cubes.get(pos);
         if (cv == null) {
             cv = new CharacteristicVector(cubePos);
-            System.err.println("creating new cube");
             cubes.put(pos, cv);
         }
         return cv;

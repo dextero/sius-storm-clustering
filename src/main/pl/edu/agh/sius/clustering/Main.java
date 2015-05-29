@@ -18,9 +18,6 @@ import java.util.List;
 public class Main {
     public static boolean finished;
 
-    public static final int DIM_SIZE = 5;
-    public static final int DIM_CUBES_PER_BOLT = 5;
-
     public static void main(String[] args) {
         TopologyBuilder builder = new TopologyBuilder();
 
@@ -28,10 +25,10 @@ public class Main {
 
         List<String> mergeInputs = new ArrayList<>();
 
-        final double CUBE_SIZE = DataSource.DIMENSION_SIZE / ((double) (DIM_SIZE * DIM_CUBES_PER_BOLT));
-        final double BOLT_CUBE_SIZE = DIM_CUBES_PER_BOLT * CUBE_SIZE;
-        for (int y = 0; y < DIM_SIZE; ++y) {
-            for (int x = 0; x < DIM_SIZE; x++) {
+        final double CUBE_SIZE = DataSource.DIMENSION_SIZE / ((double) (Constants.TOTAL_CUBES_PER_SPACE));
+        final double BOLT_CUBE_SIZE = Constants.DIM_CUBES_PER_BOLT * CUBE_SIZE;
+        for (int y = 0; y < Constants.DIM_SIZE; ++y) {
+            for (int x = 0; x < Constants.DIM_SIZE; x++) {
                 DoubleRange[] range = new DoubleRange[] {
                     new DoubleRange(x * BOLT_CUBE_SIZE, (x + 1) * BOLT_CUBE_SIZE),
                     new DoubleRange(y * BOLT_CUBE_SIZE, (y + 1) * BOLT_CUBE_SIZE)

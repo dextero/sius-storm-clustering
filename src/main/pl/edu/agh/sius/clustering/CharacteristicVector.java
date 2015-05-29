@@ -3,8 +3,6 @@ package pl.edu.agh.sius.clustering;
 import java.time.Instant;
 
 public class CharacteristicVector {
-    public static final double DECAY_FACTOR = 1.0;
-
     enum Status {
         Sporadic,
         Normal
@@ -26,7 +24,7 @@ public class CharacteristicVector {
 
 //        double oldDensity = density;
 //        long oldTime = timeLastUpdated;
-        density = Math.pow(DECAY_FACTOR, timestamp - timeLastUpdated) * density + 1.0;
+        density = Math.pow(Constants.DECAY_FACTOR, timestamp - timeLastUpdated) * density + 1.0;
         timeLastUpdated = timestamp;
 
 //        System.out.println("update " + position[0] + "," + position[1] + ": density " + oldDensity + " -> " + density + ", time = " + timeLastUpdated + ", was " + oldTime);

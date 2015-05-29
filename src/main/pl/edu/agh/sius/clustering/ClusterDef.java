@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Random;
 
 public class ClusterDef implements Serializable {
-    private final double[] mean;
+    private double[] mean;
     private final double[] variance;
     private final Random rng;
 
@@ -23,5 +23,11 @@ public class ClusterDef implements Serializable {
             ret[i] = rng.nextGaussian() * variance[i] + mean[i];
         }
         return ret;
+    }
+
+    public void move(double[] delta) {
+        for (int i = 0; i < mean.length; i++) {
+            mean[i] = Math.min(Math.max(0.1, mean[i] + delta[i]), 0.9);
+        }
     }
 }
