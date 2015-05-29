@@ -7,12 +7,16 @@ import backtype.storm.topology.TopologyBuilder;
 import pl.edu.agh.sius.clustering.bolt.DStreamBolt;
 import pl.edu.agh.sius.clustering.bolt.DataFilterBolt;
 import pl.edu.agh.sius.clustering.bolt.MergingBolt;
+import pl.edu.agh.sius.clustering.visualizer.Visualizer;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
     public static boolean finished;
+
+    public static final int DIM_SIZE = 5;
+    public static final int DIM_CUBES_PER_BOLT = 5;
 
     public static void main(String[] args) {
         TopologyBuilder builder = new TopologyBuilder();
@@ -21,8 +25,6 @@ public class Main {
 
         List<String> mergeInputs = new ArrayList<>();
 
-        final int DIM_SIZE = 5;
-        final int DIM_CUBES_PER_BOLT = 5;
         final double CUBE_SIZE = DataSource.DIMENSION_SIZE / ((double) (DIM_SIZE * DIM_CUBES_PER_BOLT));
         final double BOLT_CUBE_SIZE = DIM_CUBES_PER_BOLT * CUBE_SIZE;
         for (int y = 0; y < DIM_SIZE; ++y) {
@@ -55,8 +57,10 @@ public class Main {
         LocalCluster cluster = new LocalCluster();
         cluster.submitTopology("test", config, builder.createTopology());
 
+        Visualizer.show(42);
+
         while (!finished) {
-            System.err.println("waiting");
+//            System.err.println("waiting");
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {

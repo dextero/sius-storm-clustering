@@ -8,6 +8,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import pl.edu.agh.sius.clustering.CharacteristicVector;
+import pl.edu.agh.sius.clustering.PositionWrapper;
 import pl.edu.agh.sius.clustering.VectorUtils;
 
 import java.util.HashMap;

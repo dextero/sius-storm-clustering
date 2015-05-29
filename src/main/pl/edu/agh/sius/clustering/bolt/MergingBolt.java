@@ -7,8 +7,9 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import pl.edu.agh.sius.clustering.CharacteristicVector;
-import pl.edu.agh.sius.clustering.DoubleRange;
 import pl.edu.agh.sius.clustering.Main;
+import pl.edu.agh.sius.clustering.PositionWrapper;
+import pl.edu.agh.sius.clustering.visualizer.Visualizer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -97,6 +98,8 @@ public class MergingBolt extends BaseRichBolt {
 
     private void update() {
         List<List<PositionWrapper>> clusters = initialClustering();
+        Visualizer.clusters = clusters;
+        Visualizer.self.repaint();
 
         StringBuilder builder = new StringBuilder();
         for (List<PositionWrapper> cluster: clusters) {
@@ -108,8 +111,6 @@ public class MergingBolt extends BaseRichBolt {
         }
         System.err.println(builder.toString());
         counter = 0;
-
-        Main.finished = true;
     }
 
     @Override

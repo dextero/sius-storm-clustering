@@ -6,11 +6,9 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+import pl.edu.agh.sius.clustering.visualizer.Visualizer;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 public class DataSource extends BaseRichSpout {
     private final Random rng;
@@ -52,10 +50,20 @@ public class DataSource extends BaseRichSpout {
         collector = spoutOutputCollector;
     }
 
+    public static List<double[]> points = new ArrayList<>();
+    public static final int MAX_POINTS = 100;
+
     public void nextTuple() {
         int clusterIdx = rng.nextInt(clusters.size());
         ClusterDef cluster = clusters.get(clusterIdx);
         double[] point = cluster.generatePoint();
+
+        points.add(point);
+        if (points.size() >= MAX_POINTS) {
+            Visualizer.points = points;
+            points = new ArrayList<>();
+        }
+
         collector.emit(new Values(point, counter++));
     }
 }

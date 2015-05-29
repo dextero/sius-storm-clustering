@@ -1,9 +1,9 @@
-package pl.edu.agh.sius.clustering.bolt;
+package pl.edu.agh.sius.clustering;
 
 import java.util.Arrays;
 
-class PositionWrapper {
-    int[] pos;
+public class PositionWrapper {
+    public int[] pos;
 
     public PositionWrapper(int[] pos) {
         this.pos = pos;
