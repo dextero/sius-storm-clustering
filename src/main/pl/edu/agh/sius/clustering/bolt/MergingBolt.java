@@ -34,7 +34,15 @@ public class MergingBolt extends BaseRichBolt {
         CharacteristicVector cv = (CharacteristicVector) tuple.getValue(0);
         timestamp = Math.max(tuple.getLong(1), timestamp);
 
-        grids.put(new PositionWrapper(cv.position), cv);
+        PositionWrapper pos = new PositionWrapper(cv.position);
+        CharacteristicVector oldCv = grids.get(pos);
+
+        if (oldCv == null) {
+            grids.put(pos, cv);
+        } else {
+            oldCv.update(cv);
+        }
+
         if (counter++ >= Constants.MESSAGES_PER_UPDATE) {
             update();
         }

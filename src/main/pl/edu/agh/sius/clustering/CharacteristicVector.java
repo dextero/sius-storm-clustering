@@ -47,6 +47,15 @@ public class CharacteristicVector implements Cloneable {
         }
     }
 
+    public void update(CharacteristicVector cv) {
+        status = cv.status;
+        timeLastUpdated = cv.timeLastUpdated;
+        timeLastRemovedSporadic = cv.timeLastRemovedSporadic;
+        density = cv.density;
+        position = cv.position;
+        boundingBox = cv.boundingBox;
+    }
+
     @Override
     public Object clone() {
         try {

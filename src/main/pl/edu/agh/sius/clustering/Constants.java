@@ -1,7 +1,7 @@
 package pl.edu.agh.sius.clustering;
 
 public class Constants {
-    public static final double DECAY_FACTOR = 0.9;
+    public static final double DECAY_FACTOR = 0.97;
     public static final int DIM_SIZE = 5;
     public static final int DIM_CUBES_PER_BOLT = 10;
 
