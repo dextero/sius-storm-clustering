@@ -380,6 +380,11 @@ public class MergingBolt extends BaseRichBolt {
         return id;
     }
 
+    private static int comparePos(CharacteristicVector a, CharacteristicVector b) {
+        return (a.position[0] - b.position[0]) * 1000000
+                + (a.position[1] - b.position[1]);
+    }
+
     private void update() {
         if (clusters == null) {
             clusters = initialClustering();
@@ -426,7 +431,7 @@ public class MergingBolt extends BaseRichBolt {
                     Constants.LOW_THRESHOLD_PARAMETER * (1 - Math.pow(Constants.DECAY_FACTOR, timestamp - grid.timeLastUpdated + 1))
                     / (Constants.TOTAL_CUBES_PER_SPACE * (1 - Constants.DECAY_FACTOR));
 
-            if (grid.density < densityThreshold) {
+            if (grid.densityAtTime(timestamp) < densityThreshold) {
                 if (timestamp >= (1 + Constants.SPORADIC_GRID_DELETE_CONSTANT) * grid.timeLastRemovedSporadic) {
                     grid.status = CharacteristicVector.Status.Sporadic;
                     grid.timeLastRemovedSporadic = grid.timeLastUpdated;

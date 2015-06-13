@@ -1,5 +1,7 @@
 package pl.edu.agh.sius.clustering;
 
+import java.util.Arrays;
+
 public class CharacteristicVector implements Cloneable {
     public enum Status {
         Sporadic,
@@ -31,10 +33,14 @@ public class CharacteristicVector implements Cloneable {
 
 //        double oldDensity = density;
 //        long oldTime = timeLastUpdated;
-        density = Math.pow(Constants.DECAY_FACTOR, timestamp - timeLastUpdated) * density + 1.0;
+        density = densityAtTime(timestamp);
         timeLastUpdated = timestamp;
 
 //        System.out.println("update " + position[0] + "," + position[1] + ": density " + oldDensity + " -> " + density + ", time = " + timeLastUpdated + ", was " + oldTime);
+    }
+
+    public double densityAtTime(long timestamp) {
+        return Math.pow(Constants.DECAY_FACTOR, timestamp - timeLastUpdated) * density + 1.0;
     }
 
     public Density getDensityLevel() {
@@ -54,6 +60,13 @@ public class CharacteristicVector implements Cloneable {
         density = cv.density;
         position = cv.position;
         boundingBox = cv.boundingBox;
+    }
+
+    @Override
+    public String toString() {
+        return Arrays.toString(position) +
+                ", density=" + density +
+                ", cluster=" + cluster;
     }
 
     @Override
