@@ -64,9 +64,6 @@ public class MergingBolt extends BaseRichBolt {
 
                     for (Map.Entry<Integer, List<PositionWrapper>> indexCluster : clusters.entrySet()) {
                         List<PositionWrapper> cluster = indexCluster.getValue();
-                        if (cluster == null) {
-                            System.err.println("wat");
-                        }
                         if (cluster.indexOf(nbrPos) != -1) {
                             clustersToMerge.add(indexCluster.getKey());
                             break;
@@ -78,7 +75,7 @@ public class MergingBolt extends BaseRichBolt {
             List<PositionWrapper> newCluster = new ArrayList<>();
             newCluster.add(currPos);
             Map<Integer, List<PositionWrapper>> newClusters = new HashMap<>();
-            newClusters.put(0, newCluster);
+            newClusters.put(nextId(newClusters), newCluster);
 
             for (Map.Entry<Integer, List<PositionWrapper>> indexCluster : clusters.entrySet()) {
                 int index = indexCluster.getKey();
@@ -87,7 +84,7 @@ public class MergingBolt extends BaseRichBolt {
                 if (clustersToMerge.contains(index)) {
                     newCluster.addAll(clusters.get(index));
                 } else {
-                    newClusters.put(nextClusterId(), cluster);
+                    newClusters.put(nextId(newClusters), cluster);
                 }
             }
 
@@ -236,13 +233,13 @@ public class MergingBolt extends BaseRichBolt {
                 }
             }
 
-            clusters.put(nextClusterId(), newCluster);
+            clusters.put(nextId(clusters), newCluster);
         }
    }
 
-    private int nextClusterId() {
-        int id = clusters.size();
-        while (clusters.containsKey(id)) {
+    private int nextId(Map<Integer, ?> map) {
+        int id = map.size();
+        while (map.containsKey(id)) {
             ++id;
         }
         return id;
