@@ -15,6 +15,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class MergingBolt extends BaseRichBolt {
+    private static final int MAX_NEIGHBORS = 4;
     private OutputCollector collector;
     private Map<PositionWrapper, CharacteristicVector> grids = new HashMap<>();
     private int counter = 0;
@@ -106,18 +107,26 @@ public class MergingBolt extends BaseRichBolt {
                                             PositionWrapper center) {
         List<PositionWrapper> nbrs = new ArrayList<>();
 
-        for (int x = -1; x <= 1; ++x) {
-            if (center.pos[0] + x >= 0 && center.pos[0] + x < Constants.TOTAL_CUBES_PER_DIM) {
-                for (int y = -1; y <= 1; ++y) {
-                    if (x == 0 && y == 0) {
-                        continue;
-                    }
-                    if (center.pos[1] + y >= 0 && center.pos[1] + y < Constants.TOTAL_CUBES_PER_DIM) {
-                        PositionWrapper pos = new PositionWrapper(new int[]{center.pos[0] + x, center.pos[1] + y});
-                        if (grids.contains(pos)) {
-                            nbrs.add(pos);
-                        }
-                    }
+        final int[][] NEIGHBORS = {
+                new int[] { -1, 0 },
+                new int[] { 1, 0 },
+                new int[] { 0, -1 },
+                new int[] { 0, 1 }
+//                , new int[] { -1, -1 },
+//                  new int[] { -1, 1 },
+//                  new int[] { 1, -1 },
+//                  new int[] { 1, 1 }
+        };
+
+        for (int[] xy : NEIGHBORS) {
+            int x = xy[0];
+            int y = xy[1];
+
+            if (center.pos[0] + x >= 0 && center.pos[0] + x < Constants.TOTAL_CUBES_PER_DIM
+                    && center.pos[1] + y >= 0 && center.pos[1] + y < Constants.TOTAL_CUBES_PER_DIM) {
+                PositionWrapper pos = new PositionWrapper(new int[]{center.pos[0] + x, center.pos[1] + y});
+                if (grids.contains(pos)) {
+                    nbrs.add(pos);
                 }
             }
         }
@@ -153,7 +162,7 @@ public class MergingBolt extends BaseRichBolt {
         // TODO: are diagonal grids neighbors too?
         return neighbors(grids.keySet(), outsideGridPos).stream()
                 .filter(p -> grids.get(p).cluster == outsideGridCluster)
-                .count() < 7;
+                .count() < MAX_NEIGHBORS - 1;
 
     }
 
@@ -262,7 +271,7 @@ public class MergingBolt extends BaseRichBolt {
                     System.err.println("wat");
                 }
                 List<PositionWrapper> biggestCluster = clusters.get(biggestClusterIdx);
-                if (biggestCluster.size() < 8) {
+                if (biggestCluster.size() < MAX_NEIGHBORS) {
                     assignGridToCluster(currPos, curr, biggestClusterIdx);
                 }
             }
@@ -375,7 +384,7 @@ public class MergingBolt extends BaseRichBolt {
         if (clusters == null) {
             clusters = initialClustering();
         } else {
-//            removeSporadicGrids();
+            removeSporadicGrids();
             adjustClustering();
         }
 
