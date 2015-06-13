@@ -151,13 +151,19 @@ public class MergingBolt extends BaseRichBolt {
             CharacteristicVector curr = cube.getValue();
             currDensities.put(currPos, densityLevel);
 
-            if (densityLevel != lastAdjustDensities.get(currPos)) {
+            if (densityLevel != lastAdjustDensities.get(currPos)
+                    && curr.cluster != CharacteristicVector.NO_CLASS) {
                 List<PositionWrapper> cluster = clusters.get(cubes.get(currPos).cluster);
                 cluster.remove(currPos);
 
                 ensureClusterConnected(cluster, clusters);
             } else if (densityLevel == CharacteristicVector.Density.Dense) {
-                PositionWrapper nbrPos = neighbors(currPos).get(0);
+                List<PositionWrapper> neighbors = neighbors(currPos);
+                if (neighbors.isEmpty()) {
+                    continue;
+                }
+                
+                PositionWrapper nbrPos = neighbors.get(0);
                 // TODO: find h, assign to nbr
                 CharacteristicVector nbr = cubes.get(nbrPos);
                 CharacteristicVector.Density nbrDensity = nbr.getDensityLevel();
