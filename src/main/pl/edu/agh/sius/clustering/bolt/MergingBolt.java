@@ -10,19 +10,17 @@ import pl.edu.agh.sius.clustering.CharacteristicVector;
 import pl.edu.agh.sius.clustering.Constants;
 import pl.edu.agh.sius.clustering.PositionWrapper;
 import pl.edu.agh.sius.clustering.visualizer.Visualizer;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class MergingBolt extends BaseRichBolt {
     private OutputCollector collector;
-    private Map<PositionWrapper, CharacteristicVector> cubes = new HashMap<>();
+    private Map<PositionWrapper, CharacteristicVector> grids = new HashMap<>();
     private int counter = 0;
+    private long timestamp = 0;
     private Map<PositionWrapper, CharacteristicVector.Density> lastAdjustDensities = new HashMap<>();
-    private Map<Integer, List<PositionWrapper>> clusters = new HashMap<>();
-
-    public static final int MESSAGES_PER_UPDATE = 1000;
+    private Map<Integer, List<PositionWrapper>> clusters = null;
 
     @Override
     public void prepare(Map map,
@@ -34,9 +32,10 @@ public class MergingBolt extends BaseRichBolt {
     @Override
     public void execute(Tuple tuple) {
         CharacteristicVector cv = (CharacteristicVector) tuple.getValue(0);
+        timestamp = tuple.getLong(1);
 
-        cubes.put(new PositionWrapper(cv.position), cv);
-        if (counter++ >= MESSAGES_PER_UPDATE) {
+        grids.put(new PositionWrapper(cv.position), cv);
+        if (counter++ >= Constants.MESSAGES_PER_UPDATE) {
             update();
         }
     }
@@ -45,37 +44,34 @@ public class MergingBolt extends BaseRichBolt {
         // TODO: optimize
         Map<Integer, List<PositionWrapper>> clusters = new HashMap<>();
 
-        for (Map.Entry<PositionWrapper, CharacteristicVector> cube: cubes.entrySet()) {
-            PositionWrapper currPos = cube.getKey();
-            double density = cube.getValue().density;
+        for (Map.Entry<PositionWrapper, CharacteristicVector> grid: grids.entrySet()) {
+            PositionWrapper currPos = grid.getKey();
+            CharacteristicVector curr = grid.getValue();
 
-            if (density < Constants.DENSITY_MIN) {
+            if (curr.density < Constants.DENSITY_MIN) {
                 continue;
             }
 
             List<Integer> clustersToMerge = new ArrayList<>();
 
-            for (int dx = -1; dx <= 1; ++dx) {
-                for (int dy = -1; dy <= 1; dy++) {
-                    PositionWrapper nbrPos = new PositionWrapper(new int[] {
-                            currPos.pos[0] + dx,
-                            currPos.pos[1] + dy
-                    });
-
-                    for (Map.Entry<Integer, List<PositionWrapper>> indexCluster : clusters.entrySet()) {
-                        List<PositionWrapper> cluster = indexCluster.getValue();
-                        if (cluster.indexOf(nbrPos) != -1) {
-                            clustersToMerge.add(indexCluster.getKey());
-                            break;
-                        }
-                    }
+            for (PositionWrapper nbrPos : neighbors(grids.keySet(), currPos)) {
+                int cluster = grids.get(nbrPos).cluster;
+                if (cluster != CharacteristicVector.NO_CLASS
+                        && cluster != curr.cluster) {
+                    clustersToMerge.add(cluster);
+                    break;
                 }
             }
 
+            Map<Integer, List<PositionWrapper>> newClusters = new HashMap<>();
+
+            int newClusterId = nextId(newClusters);
+
             List<PositionWrapper> newCluster = new ArrayList<>();
             newCluster.add(currPos);
-            Map<Integer, List<PositionWrapper>> newClusters = new HashMap<>();
-            newClusters.put(nextId(newClusters), newCluster);
+            curr.cluster = newClusterId;
+
+            newClusters.put(newClusterId, newCluster);
 
             for (Map.Entry<Integer, List<PositionWrapper>> indexCluster : clusters.entrySet()) {
                 int index = indexCluster.getKey();
@@ -83,8 +79,12 @@ public class MergingBolt extends BaseRichBolt {
 
                 if (clustersToMerge.contains(index)) {
                     newCluster.addAll(clusters.get(index));
+                    clusters.get(index)
+                            .forEach(p -> grids.get(p).cluster = newClusterId);
                 } else {
-                    newClusters.put(nextId(newClusters), cluster);
+                    int newId = nextId(newClusters);
+                    newClusters.put(newId, cluster);
+                    cluster.forEach(p -> grids.get(p).cluster = newId);
                 }
             }
 
@@ -94,19 +94,19 @@ public class MergingBolt extends BaseRichBolt {
         return clusters;
     }
 
-    private List<PositionWrapper> neighbors(Set<PositionWrapper> cubes,
+    private List<PositionWrapper> neighbors(Set<PositionWrapper> grids,
                                             PositionWrapper center) {
         List<PositionWrapper> nbrs = new ArrayList<>();
 
         for (int x = -1; x <= 1; ++x) {
-            if (center.pos[0] + x >= 0 && center.pos[0] + x < Constants.DIM_SIZE + Constants.CUBE_SIZE) {
+            if (center.pos[0] + x >= 0 && center.pos[0] + x < Constants.TOTAL_CUBES_PER_DIM) {
                 for (int y = -1; y <= 1; ++y) {
-                    if (x == center.pos[0] && y == center.pos[1]) {
+                    if (x == 0 && y == 0) {
                         continue;
                     }
-                    if (center.pos[1] + y >= 1 && center.pos[1] + y < Constants.DIM_SIZE + Constants.CUBE_SIZE) {
-                        PositionWrapper pos = new PositionWrapper(new int[]{x, y});
-                        if (cubes.contains(pos)) {
+                    if (center.pos[1] + y >= 0 && center.pos[1] + y < Constants.TOTAL_CUBES_PER_DIM) {
+                        PositionWrapper pos = new PositionWrapper(new int[]{center.pos[0] + x, center.pos[1] + y});
+                        if (grids.contains(pos)) {
                             nbrs.add(pos);
                         }
                     }
@@ -119,15 +119,21 @@ public class MergingBolt extends BaseRichBolt {
 
     private int clusterSize(int cluster) {
         if (cluster == CharacteristicVector.NO_CLASS) {
-            return 1;
+            return 0;
+        }
+        if (!clusters.containsKey(cluster)) {
+            System.err.println("wat");
         }
         return clusters.get(cluster).size();
     }
 
     private void mergeCluster(int oldCluster,
                               int newClusterIdx) {
+        if (oldCluster == newClusterIdx) {
+            throw new ThisShouldNeverHappenException();
+        }
         for (PositionWrapper p : clusters.get(oldCluster)) {
-            cubes.get(p).cluster = newClusterIdx;
+            grids.get(p).cluster = newClusterIdx;
 
         }
         clusters.get(newClusterIdx).addAll(clusters.get(oldCluster));
@@ -137,39 +143,71 @@ public class MergingBolt extends BaseRichBolt {
     private boolean willBeOutsideGridIfWeAddAnotherNeighborToItsCluster(PositionWrapper outsideGridPos,
                                                                         int outsideGridCluster) {
         // TODO: are diagonal grids neighbors too?
-        return neighbors(cubes.keySet(), outsideGridPos).stream()
-                .filter(p -> cubes.get(p).cluster == outsideGridCluster)
+        return neighbors(grids.keySet(), outsideGridPos).stream()
+                .filter(p -> grids.get(p).cluster == outsideGridCluster)
                 .count() < 7;
 
+    }
+
+    private static class Pair<A, B> {
+        public A first;
+        public B second;
+
+        public Pair(A first,
+                    B second) {
+            this.first = first;
+            this.second = second;
+        }
+    }
+
+    private void ensureClusterIdsOk() {
+        for (CharacteristicVector cv : grids.values()) {
+            if (cv.cluster != -1
+                    && (!clusters.containsKey(cv.cluster)
+                        || !clusters.get(cv.cluster).contains(new PositionWrapper(cv.position)))) {
+                System.err.println("asdasd");
+            }
+        }
     }
 
     private void adjustClustering() {
         Map<PositionWrapper, CharacteristicVector.Density> currDensities = new HashMap<>();
 
-        for (Map.Entry<PositionWrapper, CharacteristicVector> cube : cubes.entrySet()) {
-            CharacteristicVector.Density densityLevel = cube.getValue().getDensityLevel();
-            PositionWrapper currPos = cube.getKey();
-            CharacteristicVector curr = cube.getValue();
+        for (Map.Entry<PositionWrapper, CharacteristicVector> grid : grids.entrySet()) {
+            CharacteristicVector.Density densityLevel = grid.getValue().getDensityLevel();
+            PositionWrapper currPos = grid.getKey();
+            CharacteristicVector curr = grid.getValue();
             currDensities.put(currPos, densityLevel);
 
             if (densityLevel != lastAdjustDensities.get(currPos)
                     && curr.cluster != CharacteristicVector.NO_CLASS) {
-                List<PositionWrapper> cluster = clusters.get(cubes.get(currPos).cluster);
-                cluster.remove(currPos);
-
-                ensureClusterConnected(cluster, clusters);
+                int clusterIdx = grids.get(currPos).cluster;
+                List<PositionWrapper> cluster = clusters.get(clusterIdx);
+                removeFromCluster(currPos, clusterIdx);
+                if (!cluster.isEmpty()) {
+                    ensureClusterConnected(cluster, clusters);
+                }
             } else if (densityLevel == CharacteristicVector.Density.Dense) {
-                List<PositionWrapper> neighbors = neighbors(cubes.keySet(), currPos);
-                if (neighbors.isEmpty()) {
+                List<PositionWrapper> neighbors = neighbors(grids.keySet(), currPos);
+
+                if (neighbors.isEmpty()
+                        || neighbors.stream().allMatch(pos -> grids.get(pos).cluster == CharacteristicVector.NO_CLASS)) {
+                    curr.cluster = nextId(clusters);
+                    List<PositionWrapper> newCluster = new ArrayList<>();
+                    newCluster.add(currPos);
+                    clusters.put(curr.cluster, newCluster);
                     continue;
                 }
 
-                PositionWrapper nbrPos = neighbors.get(0);
-                // TODO: find h, assign to nbr
-                CharacteristicVector nbr = cubes.get(nbrPos);
+                PositionWrapper nbrPos = getNeighborWithBiggestCluster(curr, neighbors);
+                if (nbrPos == null) {
+                    continue;
+                }
+
+                CharacteristicVector nbr = grids.get(nbrPos);
                 CharacteristicVector.Density nbrDensity = nbr.getDensityLevel();
                 if (nbrDensity == CharacteristicVector.Density.Dense) {
-                    if (curr.cluster != CharacteristicVector.NO_CLASS) {
+                    if (curr.cluster == CharacteristicVector.NO_CLASS) {
                         assignGridToCluster(currPos, curr, nbr.cluster);
                     } else if (nbr.cluster != CharacteristicVector.NO_CLASS) {
                         if (clusterSize(curr.cluster) > clusterSize(nbr.cluster)) {
@@ -186,19 +224,54 @@ public class MergingBolt extends BaseRichBolt {
                         assignGridToCluster(nbrPos, nbr, curr.cluster);
                     }
                 }
+            } else if (densityLevel == CharacteristicVector.Density.Transitional) {
+                // TODO
             }
         }
+
+        lastAdjustDensities = currDensities;
+    }
+
+    private PositionWrapper getNeighborWithBiggestCluster(CharacteristicVector curr,
+                                                          List<PositionWrapper> neighbors) {
+        PositionWrapper nbrPos = null;
+        int nbrClusterSize = -1;
+        for (PositionWrapper neighborPos : neighbors) {
+            int nbrClusterIdx = grids.get(neighborPos).cluster;
+            if (nbrClusterIdx != curr.cluster) {
+                int currNbrClusterSize = clusterSize(nbrClusterIdx);
+                if (currNbrClusterSize > nbrClusterSize) {
+                    nbrPos = neighborPos;
+                    nbrClusterSize = currNbrClusterSize;
+                }
+            }
+        }
+        return nbrPos;
     }
 
     private void assignGridToCluster(PositionWrapper pos,
                                      CharacteristicVector grid,
                                      int cluster) {
         if (grid.cluster != CharacteristicVector.NO_CLASS) {
-            clusters.get(grid.cluster).remove(pos);
+            removeFromCluster(pos, grid.cluster);
         }
 
         grid.cluster = cluster;
         clusters.get(cluster).add(pos);
+    }
+
+    private void removeFromCluster(PositionWrapper pos,
+                                   int clusterIdx) {
+        List<PositionWrapper> cluster = clusters.get(clusterIdx);
+        if (!cluster.contains(pos)) {
+            System.err.println("wat");
+        }
+        cluster.remove(pos);
+        grids.get(pos).cluster = CharacteristicVector.NO_CLASS;
+
+        if (cluster.isEmpty()) {
+            clusters.remove(clusterIdx);
+        }
     }
 
     private void ensureClusterConnected(List<PositionWrapper> cluster,
@@ -233,7 +306,9 @@ public class MergingBolt extends BaseRichBolt {
                 }
             }
 
-            clusters.put(nextId(clusters), newCluster);
+            int newClusterIdx = nextId(clusters);
+            clusters.put(newClusterIdx, newCluster);
+            newCluster.forEach(pos -> grids.get(pos).cluster = newClusterIdx);
         }
    }
 
@@ -246,23 +321,53 @@ public class MergingBolt extends BaseRichBolt {
     }
 
     private void update() {
-//        if (clusters == null) {
+        if (clusters == null) {
             clusters = initialClustering();
-//        } else {
-//            adjustClustering();
-//        }
+        } else {
+//            removeSporaticGrids();
+            adjustClustering();
+        }
+
         Visualizer.clusters = clusters.values().stream().collect(Collectors.toList());
 
 //        StringBuilder builder = new StringBuilder();
 //        for (List<PositionWrapper> cluster: clusters) {
 //            builder.append("cluster:");
 //            for (PositionWraspper position : cluster) {
-//                builder.append(" ").append(position).append(" = ").append(cubes.get(position));
+//                builder.append(" ").append(position).append(" = ").append(grids.get(position));
 //            }
 //            builder.append("\n");
 //        }
 //        System.err.println(builder.toString());
         counter = 0;
+    }
+
+    private void removeSporaticGrids() {
+        Iterator<Map.Entry<PositionWrapper, CharacteristicVector>> iterator = grids.entrySet().iterator();
+
+        while (iterator.hasNext()) {
+            Map.Entry<PositionWrapper, CharacteristicVector> posGrid = iterator.next();
+            CharacteristicVector grid = posGrid.getValue();
+
+            if (grid.status == CharacteristicVector.Status.Sporadic) {
+                if (grid.timeLastUpdated == grid.timeLastRemovedSporadic) {
+                    iterator.remove();
+                    continue;
+                } else {
+                    grid.status = CharacteristicVector.Status.Normal;
+                }
+            }
+
+            double densityThreshold = Constants.LOW_THRESHOLD_PARAMETER * (1 - Math.pow(Constants.DECAY_FACTOR, timestamp - grid.timeLastUpdated + 1))
+                    / Constants.TOTAL_CUBES_PER_SPACE * (1 - Constants.DECAY_FACTOR);
+
+            if (grid.density < densityThreshold) {
+                if (timestamp >= (1 + Constants.SPORADIC_GRID_DELETE_CONSTANT) * grid.timeLastRemovedSporadic) {
+                    grid.status = CharacteristicVector.Status.Sporadic;
+                    grid.timeLastRemovedSporadic = grid.timeLastUpdated;
+                }
+            }
+        }
     }
 
     @Override

@@ -14,7 +14,7 @@ public class ClusterDef implements Serializable {
 
         this.mean = mean;
         this.variance = variance;
-        this.rng = new Random();
+        this.rng = new Random(0);
     }
 
     public double[] generatePoint() {

@@ -41,7 +41,7 @@ public class DStreamBolt extends BaseRichBolt {
         cv.update(timestamp);
 
         collector.ack(tuple);
-        collector.emit(new Values(cv));
+        collector.emit(new Values(cv, timestamp));
     }
 
     private CharacteristicVector getOrCreateCharacteristicVector(int[] cubePos) {
@@ -56,6 +56,6 @@ public class DStreamBolt extends BaseRichBolt {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-        outputFieldsDeclarer.declare(new Fields("cv"));
+        outputFieldsDeclarer.declare(new Fields("cv", "timestamp"));
     }
 }

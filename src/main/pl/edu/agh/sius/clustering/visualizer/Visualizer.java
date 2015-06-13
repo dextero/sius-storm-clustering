@@ -7,9 +7,6 @@ import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.scenes.scene2d.Event;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.badlogic.gdx.scenes.scene2d.InputListener;
 import pl.edu.agh.sius.clustering.ColoredPoint;
 import pl.edu.agh.sius.clustering.Constants;
 import pl.edu.agh.sius.clustering.Main;
@@ -91,7 +88,7 @@ public class Visualizer implements ApplicationListener, InputProcessor {
         Gdx.gl.glClearColor(0.2f, 0.2f, 0.2f, 1);
         Gdx.gl.glClear(GL30.GL_COLOR_BUFFER_BIT);
 
-        final float factor = (float)Constants.TOTAL_CUBES_PER_SPACE;
+        final float factor = (float)Constants.TOTAL_CUBES_PER_DIM;
 
         batch.begin();
         batch.enableBlending();

@@ -23,7 +23,7 @@ public class DataSource extends BaseRichSpout {
         assert numClusters > 0;
         assert numDimensions > 0;
 
-        rng = new Random();
+        rng = new Random(0);
 
         for (int clusterIdx = 0; clusterIdx < numClusters; clusterIdx++) {
             double[] mean = new double[numDimensions];
