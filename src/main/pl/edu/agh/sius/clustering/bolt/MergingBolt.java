@@ -196,7 +196,7 @@ public class MergingBolt extends BaseRichBolt {
                 List<PositionWrapper> cluster = clusters.get(clusterIdx);
                 removeFromCluster(currPos, clusterIdx);
                 if (!cluster.isEmpty()) {
-                    ensureClusterConnected(cluster, clusters);
+                    ensureClusterConnected(clusterIdx, clusters);
                 }
             } else if (densityLevel == CharacteristicVector.Density.Dense) {
                 List<PositionWrapper> neighbors = neighbors(grids.keySet(), currPos);
@@ -299,42 +299,54 @@ public class MergingBolt extends BaseRichBolt {
         }
     }
 
-    private void ensureClusterConnected(List<PositionWrapper> cluster,
-                                        Map<Integer, List<PositionWrapper>> clusters) {
-        Map<PositionWrapper, Boolean> gridVisited = new HashMap<>();
-        for (PositionWrapper pos : cluster) {
-            gridVisited.put(pos, false);
-        }
-
+    private void bfsFill(Map<PositionWrapper, Integer> graph,
+                         PositionWrapper startingPos,
+                         int value) {
         Queue<PositionWrapper> queue = new ArrayDeque<>();
-        queue.add(cluster.get(0));
-        gridVisited.put(cluster.get(0), true);
-        int numVisited = 1;
+        queue.add(startingPos);
+        graph.put(startingPos, value);
 
         while (!queue.isEmpty()) {
-            for (PositionWrapper nbrPos : neighbors(gridVisited.keySet(), queue.poll())) {
-                if (!gridVisited.get(nbrPos)) {
+            for (PositionWrapper nbrPos : neighbors(graph.keySet(), queue.poll())) {
+                if (graph.get(nbrPos) == -1) {
                     queue.add(nbrPos);
-                    gridVisited.put(nbrPos, true);
-                    ++numVisited;
+                    graph.put(nbrPos, value);
                 }
             }
         }
+    }
 
-        if (numVisited != cluster.size()) {
-            List<PositionWrapper> newCluster = new ArrayList<>();
-
-            for (Map.Entry<PositionWrapper, Boolean> e : gridVisited.entrySet()) {
-                if (!e.getValue()) {
-                    newCluster.add(e.getKey());
-                    cluster.remove(e.getKey());
-                }
-            }
-
-            int newClusterIdx = nextId(clusters);
-            clusters.put(newClusterIdx, newCluster);
-            newCluster.forEach(pos -> grids.get(pos).cluster = newClusterIdx);
+    private void ensureClusterConnected(int clusterIdx,
+                                        Map<Integer, List<PositionWrapper>> clusters) {
+        Map<PositionWrapper, Integer> gridVisited = new HashMap<>();
+        List<PositionWrapper> cluster = clusters.get(clusterIdx);
+        for (PositionWrapper pos : cluster) {
+            gridVisited.put(pos, -1);
         }
+
+        Map<Integer, List<PositionWrapper>> newClusters = new HashMap<>();
+
+        for (Map.Entry<PositionWrapper, Integer> positionClusterIdx : gridVisited.entrySet()) {
+            PositionWrapper pos = positionClusterIdx.getKey();
+            int gridClusterIdx = positionClusterIdx.getValue();
+
+            if (gridClusterIdx == -1) {
+                gridClusterIdx = nextId(clusters);
+
+                ArrayList<PositionWrapper> newCluster = new ArrayList<>();
+                newCluster.add(pos);
+                newClusters.put(gridClusterIdx, newCluster);
+                grids.get(pos).cluster = gridClusterIdx;
+
+                bfsFill(gridVisited, pos, gridClusterIdx);
+            } else {
+                newClusters.get(gridClusterIdx).add(pos);
+                grids.get(pos).cluster = gridClusterIdx;
+            }
+        }
+
+        clusters.remove(clusterIdx);
+        clusters.putAll(newClusters);
    }
 
     private int nextId(Map<Integer, ?> map) {
