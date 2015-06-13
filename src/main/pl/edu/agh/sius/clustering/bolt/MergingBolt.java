@@ -170,11 +170,18 @@ public class MergingBolt extends BaseRichBolt {
 
     private void ensureClusterIdsOk() {
         for (CharacteristicVector cv : grids.values()) {
+            System.err.println("grid: " + Arrays.toString(cv.position) + " -> cluster " + cv.cluster);
             if (cv.cluster != -1
                     && (!clusters.containsKey(cv.cluster)
                         || !clusters.get(cv.cluster).contains(new PositionWrapper(cv.position)))) {
                 System.err.println("asdasd");
             }
+        }
+
+        for (Map.Entry<Integer, List<PositionWrapper>> idxCluster : clusters.entrySet()) {
+            int idx = idxCluster.getKey();
+            List<PositionWrapper> cluster = idxCluster.getValue();
+            System.err.println("cluster " + idx + ": " + cluster.toString());
         }
     }
 
@@ -193,6 +200,10 @@ public class MergingBolt extends BaseRichBolt {
 
             if (densityLevel == CharacteristicVector.Density.Sparse) {
                 int clusterIdx = grids.get(currPos).cluster;
+                if (clusterIdx == CharacteristicVector.NO_CLASS) {
+                    continue;
+                }
+
                 List<PositionWrapper> cluster = clusters.get(clusterIdx);
                 removeFromCluster(currPos, clusterIdx);
                 if (!cluster.isEmpty()) {
@@ -247,6 +258,9 @@ public class MergingBolt extends BaseRichBolt {
                         .filter(e -> e.getKey() != CharacteristicVector.NO_CLASS)
                         .findFirst().get().getKey();
 
+                if (!clusters.containsKey(biggestClusterIdx)) {
+                    System.err.println("wat");
+                }
                 List<PositionWrapper> biggestCluster = clusters.get(biggestClusterIdx);
                 if (biggestCluster.size() < 8) {
                     assignGridToCluster(currPos, curr, biggestClusterIdx);
@@ -287,6 +301,9 @@ public class MergingBolt extends BaseRichBolt {
 
     private void removeFromCluster(PositionWrapper pos,
                                    int clusterIdx) {
+        if (!clusters.containsKey(clusterIdx)) {
+            System.err.println("wat");
+        }
         List<PositionWrapper> cluster = clusters.get(clusterIdx);
         if (!cluster.contains(pos)) {
             System.err.println("wat");
@@ -324,8 +341,6 @@ public class MergingBolt extends BaseRichBolt {
             gridVisited.put(pos, -1);
         }
 
-        Map<Integer, List<PositionWrapper>> newClusters = new HashMap<>();
-
         for (Map.Entry<PositionWrapper, Integer> positionClusterIdx : gridVisited.entrySet()) {
             PositionWrapper pos = positionClusterIdx.getKey();
             int gridClusterIdx = positionClusterIdx.getValue();
@@ -333,20 +348,19 @@ public class MergingBolt extends BaseRichBolt {
             if (gridClusterIdx == -1) {
                 gridClusterIdx = nextId(clusters);
 
+                bfsFill(gridVisited, pos, gridClusterIdx);
+
                 ArrayList<PositionWrapper> newCluster = new ArrayList<>();
                 newCluster.add(pos);
-                newClusters.put(gridClusterIdx, newCluster);
-                grids.get(pos).cluster = gridClusterIdx;
-
-                bfsFill(gridVisited, pos, gridClusterIdx);
+                clusters.put(gridClusterIdx, newCluster);
             } else {
-                newClusters.get(gridClusterIdx).add(pos);
-                grids.get(pos).cluster = gridClusterIdx;
+                clusters.get(gridClusterIdx).add(pos);
             }
+
+            grids.get(pos).cluster = gridClusterIdx;
         }
 
         clusters.remove(clusterIdx);
-        clusters.putAll(newClusters);
    }
 
     private int nextId(Map<Integer, ?> map) {
@@ -361,7 +375,7 @@ public class MergingBolt extends BaseRichBolt {
         if (clusters == null) {
             clusters = initialClustering();
         } else {
-            removeSporaticGrids();
+//            removeSporadicGrids();
             adjustClustering();
         }
 
@@ -379,7 +393,7 @@ public class MergingBolt extends BaseRichBolt {
         counter = 0;
     }
 
-    private void removeSporaticGrids() {
+    private void removeSporadicGrids() {
         Iterator<Map.Entry<PositionWrapper, CharacteristicVector>> iterator = grids.entrySet().iterator();
 
         while (iterator.hasNext()) {
