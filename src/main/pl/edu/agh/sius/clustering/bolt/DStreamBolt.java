@@ -41,7 +41,7 @@ public class DStreamBolt extends BaseRichBolt {
         cv.update(timestamp);
 
         collector.ack(tuple);
-        collector.emit(new Values(cv, timestamp));
+        collector.emit(new Values(cv.clone(), timestamp));
     }
 
     private CharacteristicVector getOrCreateCharacteristicVector(int[] cubePos) {

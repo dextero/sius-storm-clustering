@@ -1,6 +1,6 @@
 package pl.edu.agh.sius.clustering;
 
-public class CharacteristicVector {
+public class CharacteristicVector implements Cloneable {
     public enum Status {
         Sporadic,
         Normal
@@ -44,6 +44,16 @@ public class CharacteristicVector {
             return Density.Transitional;
         } else {
             return Density.Dense;
+        }
+    }
+
+    @Override
+    public Object clone() {
+        try {
+            return super.clone();
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }

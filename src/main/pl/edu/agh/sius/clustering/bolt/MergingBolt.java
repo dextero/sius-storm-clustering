@@ -32,7 +32,7 @@ public class MergingBolt extends BaseRichBolt {
     @Override
     public void execute(Tuple tuple) {
         CharacteristicVector cv = (CharacteristicVector) tuple.getValue(0);
-        timestamp = tuple.getLong(1);
+        timestamp = Math.max(tuple.getLong(1), timestamp);
 
         grids.put(new PositionWrapper(cv.position), cv);
         if (counter++ >= Constants.MESSAGES_PER_UPDATE) {
@@ -230,7 +230,19 @@ public class MergingBolt extends BaseRichBolt {
                     }
                 }
             } else if (densityLevel == CharacteristicVector.Density.Transitional) {
-                // TODO
+                List<PositionWrapper> neighbors = neighbors(grids.keySet(), currPos);
+                Map<Integer, List<PositionWrapper>> nbrsByCluster = neighbors.stream()
+                        .collect(Collectors.groupingBy(n -> grids.get(n).cluster));
+
+                Integer biggestClusterIdx = nbrsByCluster.entrySet().stream()
+                        .sorted((a, b) -> b.getValue().size() - a.getValue().size())
+                        .filter(e -> e.getKey() != CharacteristicVector.NO_CLASS)
+                        .findFirst().get().getKey();
+
+                List<PositionWrapper> biggestCluster = clusters.get(biggestClusterIdx);
+                if (biggestCluster.size() < 8) {
+                    assignGridToCluster(currPos, curr, biggestClusterIdx);
+                }
             }
         }
 
@@ -352,10 +364,14 @@ public class MergingBolt extends BaseRichBolt {
 
         while (iterator.hasNext()) {
             Map.Entry<PositionWrapper, CharacteristicVector> posGrid = iterator.next();
+            PositionWrapper gridPos = posGrid.getKey();
             CharacteristicVector grid = posGrid.getValue();
 
             if (grid.status == CharacteristicVector.Status.Sporadic) {
                 if (grid.timeLastUpdated == grid.timeLastRemovedSporadic) {
+                    if (grid.cluster != CharacteristicVector.NO_CLASS) {
+                        removeFromCluster(gridPos, grid.cluster);
+                    }
                     iterator.remove();
                     continue;
                 } else {
@@ -363,8 +379,9 @@ public class MergingBolt extends BaseRichBolt {
                 }
             }
 
-            double densityThreshold = Constants.LOW_THRESHOLD_PARAMETER * (1 - Math.pow(Constants.DECAY_FACTOR, timestamp - grid.timeLastUpdated + 1))
-                    / Constants.TOTAL_CUBES_PER_SPACE * (1 - Constants.DECAY_FACTOR);
+            double densityThreshold = 1 +
+                    Constants.LOW_THRESHOLD_PARAMETER * (1 - Math.pow(Constants.DECAY_FACTOR, timestamp - grid.timeLastUpdated + 1))
+                    / (Constants.TOTAL_CUBES_PER_SPACE * (1 - Constants.DECAY_FACTOR));
 
             if (grid.density < densityThreshold) {
                 if (timestamp >= (1 + Constants.SPORADIC_GRID_DELETE_CONSTANT) * grid.timeLastRemovedSporadic) {
