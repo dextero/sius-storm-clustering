@@ -179,8 +179,11 @@ public class MergingBolt extends BaseRichBolt {
             CharacteristicVector curr = grid.getValue();
             currDensities.put(currPos, densityLevel);
 
-            if (densityLevel != lastAdjustDensities.get(currPos)
-                    && curr.cluster != CharacteristicVector.NO_CLASS) {
+            if (densityLevel == lastAdjustDensities.get(currPos)) {
+                continue;
+            }
+
+            if (densityLevel == CharacteristicVector.Density.Sparse) {
                 int clusterIdx = grids.get(currPos).cluster;
                 List<PositionWrapper> cluster = clusters.get(clusterIdx);
                 removeFromCluster(currPos, clusterIdx);
@@ -209,8 +212,10 @@ public class MergingBolt extends BaseRichBolt {
                 if (nbrDensity == CharacteristicVector.Density.Dense) {
                     if (curr.cluster == CharacteristicVector.NO_CLASS) {
                         assignGridToCluster(currPos, curr, nbr.cluster);
-                    } else if (nbr.cluster != CharacteristicVector.NO_CLASS) {
-                        if (clusterSize(curr.cluster) > clusterSize(nbr.cluster)) {
+                    } else {
+                        if (nbr.cluster == CharacteristicVector.NO_CLASS) {
+                            assignGridToCluster(nbrPos, nbr, curr.cluster);
+                        } else if (clusterSize(curr.cluster) > clusterSize(nbr.cluster)) {
                             mergeCluster(nbr.cluster, curr.cluster);
                         } else {
                             mergeCluster(curr.cluster, nbr.cluster);
@@ -324,11 +329,11 @@ public class MergingBolt extends BaseRichBolt {
         if (clusters == null) {
             clusters = initialClustering();
         } else {
-//            removeSporaticGrids();
+            removeSporaticGrids();
             adjustClustering();
         }
 
-        Visualizer.clusters = clusters.values().stream().collect(Collectors.toList());
+        Visualizer.clusters = clusters.values().stream().map(ArrayList<PositionWrapper>::new).collect(Collectors.toList());
 
 //        StringBuilder builder = new StringBuilder();
 //        for (List<PositionWrapper> cluster: clusters) {

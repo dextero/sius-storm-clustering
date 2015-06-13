@@ -1,7 +1,7 @@
 package pl.edu.agh.sius.clustering;
 
 public class Constants {
-    public static final double DECAY_FACTOR = 0.97;
+    public static final double DECAY_FACTOR = 0.9;
     public static final int DIM_SIZE = 5;
     public static final int DIM_CUBES_PER_BOLT = 10;
 
@@ -11,7 +11,7 @@ public class Constants {
 
     public static final int TOTAL_CUBES_PER_DIM = DIM_SIZE * DIM_CUBES_PER_BOLT;
     public static final int TOTAL_CUBES_PER_SPACE = TOTAL_CUBES_PER_DIM * TOTAL_CUBES_PER_DIM;
-    public static final double DENSITY_MIN = 1.0 + 0.01;
+    public static final double DENSITY_MIN = 1.0 + 0.1;
     public static final double CUBE_SIZE = Constants.DIMENSION_SIZE / ((double) (Constants.TOTAL_CUBES_PER_DIM));
 
     public static final double LOW_THRESHOLD_PARAMETER = 0.8;
