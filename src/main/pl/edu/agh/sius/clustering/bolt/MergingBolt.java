@@ -12,10 +12,7 @@ import pl.edu.agh.sius.clustering.PositionWrapper;
 import pl.edu.agh.sius.clustering.visualizer.Visualizer;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MergingBolt extends BaseRichBolt {
@@ -84,7 +81,7 @@ public class MergingBolt extends BaseRichBolt {
                 if (clustersToMerge.contains(i)) {
                     newCluster.addAll(clusters.get(i));
                 } else {
-                    newClusters.put(clusters.size(), clusters.get(i));
+                    newClusters.put(nextClusterId(), clusters.get(i));
                 }
             }
 
@@ -94,7 +91,8 @@ public class MergingBolt extends BaseRichBolt {
         return clusters;
     }
 
-    private List<PositionWrapper> neighbors(PositionWrapper center) {
+    private List<PositionWrapper> neighbors(Set<PositionWrapper> cubes,
+                                            PositionWrapper center) {
         List<PositionWrapper> nbrs = new ArrayList<>();
 
         for (int x = -1; x <= 1; ++x) {
@@ -105,7 +103,7 @@ public class MergingBolt extends BaseRichBolt {
                     }
                     if (center.pos[1] + y >= 1 && center.pos[1] + y < Constants.DIM_SIZE + Constants.CUBE_SIZE) {
                         PositionWrapper pos = new PositionWrapper(new int[]{x, y});
-                        if (cubes.containsKey(pos)) {
+                        if (cubes.contains(pos)) {
                             nbrs.add(pos);
                         }
                     }
@@ -136,7 +134,7 @@ public class MergingBolt extends BaseRichBolt {
     private boolean willBeOutsideGridIfWeAddAnotherNeighborToItsCluster(PositionWrapper outsideGridPos,
                                                                         int outsideGridCluster) {
         // TODO: are diagonal grids neighbors too?
-        return neighbors(outsideGridPos).stream()
+        return neighbors(cubes.keySet(), outsideGridPos).stream()
                 .filter(p -> cubes.get(p).cluster == outsideGridCluster)
                 .count() < 7;
 
@@ -158,11 +156,11 @@ public class MergingBolt extends BaseRichBolt {
 
                 ensureClusterConnected(cluster, clusters);
             } else if (densityLevel == CharacteristicVector.Density.Dense) {
-                List<PositionWrapper> neighbors = neighbors(currPos);
+                List<PositionWrapper> neighbors = neighbors(cubes.keySet(), currPos);
                 if (neighbors.isEmpty()) {
                     continue;
                 }
-                
+
                 PositionWrapper nbrPos = neighbors.get(0);
                 // TODO: find h, assign to nbr
                 CharacteristicVector nbr = cubes.get(nbrPos);
@@ -202,7 +200,46 @@ public class MergingBolt extends BaseRichBolt {
 
     private void ensureClusterConnected(List<PositionWrapper> cluster,
                                         Map<Integer, List<PositionWrapper>> clusters) {
-        throw new NotImplementedException();
+        Map<PositionWrapper, Boolean> gridVisited = new HashMap<>();
+        for (PositionWrapper pos : cluster) {
+            gridVisited.put(pos, false);
+        }
+
+        Queue<PositionWrapper> queue = new ArrayDeque<>();
+        queue.add(cluster.get(0));
+        gridVisited.put(cluster.get(0), true);
+        int numVisited = 1;
+
+        while (!queue.isEmpty()) {
+            for (PositionWrapper nbrPos : neighbors(gridVisited.keySet(), queue.poll())) {
+                if (!gridVisited.get(nbrPos)) {
+                    queue.add(nbrPos);
+                    gridVisited.put(nbrPos, true);
+                    ++numVisited;
+                }
+            }
+        }
+
+        if (numVisited != cluster.size()) {
+            List<PositionWrapper> newCluster = new ArrayList<>();
+
+            for (Map.Entry<PositionWrapper, Boolean> e : gridVisited.entrySet()) {
+                if (!e.getValue()) {
+                    newCluster.add(e.getKey());
+                    cluster.remove(e.getKey());
+                }
+            }
+
+            clusters.put(nextClusterId(), newCluster);
+        }
+   }
+
+    private int nextClusterId() {
+        int id = clusters.size();
+        while (clusters.containsKey(id)) {
+            ++id;
+        }
+        return id;
     }
 
     private void update() {
