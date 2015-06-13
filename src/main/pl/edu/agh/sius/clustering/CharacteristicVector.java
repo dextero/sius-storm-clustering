@@ -1,11 +1,15 @@
 package pl.edu.agh.sius.clustering;
 
-import java.time.Instant;
-
 public class CharacteristicVector {
-    enum Status {
+    public enum Status {
         Sporadic,
         Normal
+    }
+
+    public enum Density {
+        Sparse,
+        Transitional,
+        Dense
     }
 
     public Status status;
@@ -14,6 +18,9 @@ public class CharacteristicVector {
     public double density = 0.0;
     public int[] position;
     public DoubleRange[] boundingBox;
+    public int cluster = NO_CLASS;
+
+    public static final int NO_CLASS = -1;
 
     public CharacteristicVector(int[] position) {
         this.position = position;
@@ -28,5 +35,15 @@ public class CharacteristicVector {
         timeLastUpdated = timestamp;
 
 //        System.out.println("update " + position[0] + "," + position[1] + ": density " + oldDensity + " -> " + density + ", time = " + timeLastUpdated + ", was " + oldTime);
+    }
+
+    public Density getDensityLevel() {
+        if (density < Constants.SPARSE_DENSITY_LIMIT) {
+            return Density.Sparse;
+        } else if (density < Constants.DENSE_DENSITY_LIMIT) {
+            return Density.Transitional;
+        } else {
+            return Density.Dense;
+        }
     }
 }
