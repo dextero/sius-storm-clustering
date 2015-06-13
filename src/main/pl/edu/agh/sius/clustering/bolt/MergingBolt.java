@@ -62,10 +62,13 @@ public class MergingBolt extends BaseRichBolt {
                             currPos.pos[1] + dy
                     });
 
-                    for (int i = 0; i < clusters.size(); ++i) {
-                        List<PositionWrapper> cluster = clusters.get(i);
+                    for (Map.Entry<Integer, List<PositionWrapper>> indexCluster : clusters.entrySet()) {
+                        List<PositionWrapper> cluster = indexCluster.getValue();
+                        if (cluster == null) {
+                            System.err.println("wat");
+                        }
                         if (cluster.indexOf(nbrPos) != -1) {
-                            clustersToMerge.add(i);
+                            clustersToMerge.add(indexCluster.getKey());
                             break;
                         }
                     }
@@ -77,11 +80,14 @@ public class MergingBolt extends BaseRichBolt {
             Map<Integer, List<PositionWrapper>> newClusters = new HashMap<>();
             newClusters.put(0, newCluster);
 
-            for (int i = 0; i < clusters.size(); i++) {
-                if (clustersToMerge.contains(i)) {
-                    newCluster.addAll(clusters.get(i));
+            for (Map.Entry<Integer, List<PositionWrapper>> indexCluster : clusters.entrySet()) {
+                int index = indexCluster.getKey();
+                List<PositionWrapper> cluster = indexCluster.getValue();
+
+                if (clustersToMerge.contains(index)) {
+                    newCluster.addAll(clusters.get(index));
                 } else {
-                    newClusters.put(nextClusterId(), clusters.get(i));
+                    newClusters.put(nextClusterId(), cluster);
                 }
             }
 
@@ -243,11 +249,11 @@ public class MergingBolt extends BaseRichBolt {
     }
 
     private void update() {
-        if (clusters == null) {
+//        if (clusters == null) {
             clusters = initialClustering();
-        } else {
-            adjustClustering();
-        }
+//        } else {
+//            adjustClustering();
+//        }
         Visualizer.clusters = clusters.values().stream().collect(Collectors.toList());
 
 //        StringBuilder builder = new StringBuilder();
